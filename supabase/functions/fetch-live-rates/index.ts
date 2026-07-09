@@ -47,7 +47,11 @@ serve(async (req) => {
       return parts[0];
     })();
 
-    const query = `${hotelName} ${cleanCityName}`;
+    const query = (() => {
+      if (!cleanCityName) return hotelName;
+      if (hotelName.toLowerCase().includes(cleanCityName.toLowerCase())) return hotelName;
+      return `${hotelName} ${cleanCityName}`;
+    })();
 
     const inDate = checkIn || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 1); return d; })());
     const outDate = checkOut || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 2); return d; })());

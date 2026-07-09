@@ -35,3 +35,13 @@ export function formatRaw(amount, currency) {
   const symbol = CURRENCY_SYMBOLS[currency] ?? "";
   return `${symbol}${Math.round(amount).toLocaleString()}`;
 }
+
+export function convertCross(amount, fromCurrency, toCurrency) {
+  if (!amount) return 0;
+  if (fromCurrency === toCurrency) return amount;
+  const rateFrom = FX_FROM_INR[fromCurrency] ?? 1;
+  const amountInINR = amount / rateFrom;
+  const rateTo = FX_FROM_INR[toCurrency] ?? 1;
+  return Math.round(amountInINR * rateTo);
+}
+

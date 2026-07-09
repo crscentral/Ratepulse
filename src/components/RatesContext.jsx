@@ -28,7 +28,7 @@ export function RatesProvider({ propertyId, children }) {
     city: property?.location,
     checkIn,
     checkOut,
-    currency,
+    currency: property?.currency || "INR",
   });
 
   const value = useMemo(() => ({

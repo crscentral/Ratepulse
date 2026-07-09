@@ -3,7 +3,7 @@ import { Star, RefreshCw, ExternalLink, Calendar, AlertCircle } from "lucide-rea
 import { Card, PageHeader } from "../components/ui";
 import { seedHeatmapGrid, OTAS } from "../lib/seedData";
 import { useCurrency } from "../components/CurrencyContext";
-import { formatRaw } from "../lib/currency";
+import { formatRaw, convertCross } from "../lib/currency";
 import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
@@ -21,7 +21,7 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
     [propertyId, property, competitors]
   );
 
-  const { live, hotelsData, loading: refreshing, refresh, isStale } = useSharedRates();
+  const { live, hotelsData, fetchedCurrency, loading: refreshing, refresh, isStale } = useSharedRates();
 
   const showLive = live && !isStale;
   const yourLiveWebsiteRate = showLive ? hotelsData[grid[0]?.name]?.channels?.["WEBSITE"]?.rate : null;
@@ -99,7 +99,7 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                     })();
 
                     const tooltip = hasLiveIndex 
-                      ? `${formatRaw(liveCell.rate, currency)} (live index: ${displayIndex}%)` 
+                      ? `${formatRaw(convertCross(liveCell.rate, fetchedCurrency, currency), currency)} (live index: ${displayIndex}%)` 
                       : `Sample index: ${cell.index}% (click to check ${cell.ota} manually)`;
 
                     // Fallback: generate a direct search link to the hotel on that specific OTA

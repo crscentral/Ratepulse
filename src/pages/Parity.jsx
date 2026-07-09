@@ -6,7 +6,7 @@ import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
 import { useLiveParity } from "../lib/liveRates";
 import { useCurrency } from "../components/CurrencyContext";
-import { formatRaw } from "../lib/currency";
+import { formatRaw, convertCross } from "../lib/currency";
 import { useDateRange, formatDateRange } from "../components/DateRangeContext";
 
 export default function ParityPage({ propertyId, setPropertyId }) {
@@ -17,12 +17,12 @@ export default function ParityPage({ propertyId, setPropertyId }) {
   const { checkIn, checkOut } = useDateRange();
   const mockViolations = useMemo(() => seedParityViolations(propertyId, competitors), [propertyId, competitors]);
 
-  const { live, channels, referenceRate, loading: refreshing, refresh, isStale } = useLiveParity({
+  const { live, channels, referenceRate, fetchedCurrency, loading: refreshing, refresh, isStale } = useLiveParity({
     hotelName: property?.name,
     city: property?.location,
     checkIn,
     checkOut,
-    currency,
+    currency: property?.currency || "INR",
     fallback: null,
   });
 
@@ -36,8 +36,8 @@ export default function ParityPage({ propertyId, setPropertyId }) {
     ? channels.map((c) => ({
         channel: c.channel,
         room: "Overall lowest rate",
-        yourDirect: referenceRate,
-        otaRate: c.rate,
+        yourDirect: convertCross(referenceRate, fetchedCurrency, currency),
+        otaRate: convertCross(c.rate, fetchedCurrency, currency),
         diffPct: c.diffPct,
         severity: c.severity,
       }))

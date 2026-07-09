@@ -3,7 +3,7 @@ import { Filter, RefreshCw, Star, ExternalLink, Calendar, AlertCircle } from "lu
 import { Card, PageHeader } from "../components/ui";
 import { ROOM_TYPES, OTAS, seedComparisonTable } from "../lib/seedData";
 import { useCurrency } from "../components/CurrencyContext";
-import { formatCurrency, formatRaw } from "../lib/currency";
+import { formatCurrency, formatRaw, convertCross } from "../lib/currency";
 import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
@@ -24,11 +24,10 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
     [propertyId, property, competitors]
   );
 
-  const { live, hotelsData, loading: refreshing, refresh, isStale } = useSharedRates();
+  const { live, hotelsData, fetchedCurrency, loading: refreshing, refresh, isStale } = useSharedRates();
 
   // Only trust live cells when the data was actually fetched with the
-  // dates/currency currently on screen — otherwise treat as not-live so we
-  // never show a stale number under the wrong currency symbol or date.
+  // dates currently on screen — otherwise treat as not-live.
   const showLive = live && !isStale;
 
   if (loading) return null;
@@ -147,7 +146,7 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 font-semibold text-navy hover:underline"
                           >
-                            {formatRaw(liveCell.rate, currency)}
+                            {formatRaw(convertCross(liveCell.rate, fetchedCurrency, currency), currency)}
                             <ExternalLink size={10} />
                           </a>
                         </td>
