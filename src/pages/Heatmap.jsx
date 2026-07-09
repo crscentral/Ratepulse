@@ -46,9 +46,9 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
 
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex gap-3 sm:gap-4 text-xs text-gray-500 flex-wrap">
-          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#DCFCE7" }} /> Cheaper than you</div>
-          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEF3C7" }} /> Near parity</div>
-          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEE2E2" }} /> Pricier than you</div>
+          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#DCFCE7" }} /> Cheaper than you (▼)</div>
+          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEF3C7" }} /> Parity (100)</div>
+          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEE2E2" }} /> Pricier than you (▲)</div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs text-gray-400">
@@ -92,10 +92,14 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                     const hasLiveIndex = !!(liveCell?.rate && yourLiveWebsiteRate && liveCell?.link);
                     const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : cell.index;
 
-                    const { bg, text } = (() => {
-                      if (displayIndex < 97) return { bg: "#DCFCE7", text: "#15803D" };
-                      if (displayIndex <= 110) return { bg: "#FEF3C7", text: "#92400E" };
-                      return { bg: "#FEE2E2", text: "#B91C1C" };
+                    const { bg, text, arrow, arrowColor } = (() => {
+                      if (displayIndex > 100) {
+                        return { bg: "#FEE2E2", text: "#B91C1C", arrow: "▲", arrowColor: "text-red-600" };
+                      }
+                      if (displayIndex < 100) {
+                        return { bg: "#DCFCE7", text: "#15803D", arrow: "▼", arrowColor: "text-emerald-600" };
+                      }
+                      return { bg: "#FEF3C7", text: "#92400E", arrow: null, arrowColor: "" };
                     })();
 
                     const tooltip = hasLiveIndex 
@@ -111,13 +115,18 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
 
                     const content = (
                       <span
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold min-w-[52px] justify-center"
+                        className="inline-flex items-center gap-0.5 px-2 py-1 rounded-md text-xs font-semibold min-w-[56px] justify-center"
                         style={{ background: bg, color: text }}
                         title={tooltip}
                       >
                         {displayIndex}
                         {showLive && !hasLiveIndex ? "*" : ""}
-                        <ExternalLink size={8} className={hasLiveIndex && cell.ota !== "MAKEMYTRIP" ? "opacity-100" : "opacity-30"} />
+                        {arrow && (
+                          <span className={`text-[10px] ml-0.5 font-bold ${arrowColor}`}>
+                            {arrow}
+                          </span>
+                        )}
+                        <ExternalLink size={7} className={`ml-0.5 ${hasLiveIndex && cell.ota !== "MAKEMYTRIP" ? "opacity-100" : "opacity-30"}`} />
                       </span>
                     );
 
