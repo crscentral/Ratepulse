@@ -10,12 +10,6 @@ import { useProperties } from "../components/PropertiesContext";
 import { useDateRange, formatDateRange } from "../components/DateRangeContext";
 import { getOtaSearchLink } from "../lib/liveRates";
 
-function colorForIndex(index) {
-  if (index < 97) return { bg: "#DCFCE7", text: "#15803D" };
-  if (index <= 110) return { bg: "#FEF3C7", text: "#92400E" };
-  return { bg: "#FEE2E2", text: "#B91C1C" };
-}
-
 export default function HeatmapPage({ propertyId, setPropertyId }) {
   const { currency } = useCurrency();
   const { allProperties } = useProperties();
@@ -91,9 +85,23 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                 {row.cells.map((cell) => {
                   const liveCell = showLive ? hotelsData[row.name]?.channels?.[cell.ota] : null;
                   const hasLiveIndex = liveCell?.rate && yourLiveWebsiteRate && liveCell?.link;
-                  const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : cell.index;
-                  const { bg, text } = colorForIndex(displayIndex);
-                  const tooltip = hasLiveIndex ? `${formatRaw(liveCell.rate, currency)} (live)` : `Sample data — click to search ${cell.ota}`;
+                  const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : null;
+                  
+                  const { bg, text } = (() => {
+                    if (showLive && !hasLiveIndex) {
+                      return { bg: "#F3F4F6", text: "#9CA3AF" };
+                    }
+                    const idx = displayIndex !== null ? displayIndex : cell.index;
+                    if (idx < 97) return { bg: "#DCFCE7", text: "#15803D" };
+                    if (idx <= 110) return { bg: "#FEF3C7", text: "#92400E" };
+                    return { bg: "#FEE2E2", text: "#B91C1C" };
+                  })();
+
+                  const tooltip = hasLiveIndex 
+                    ? `${formatRaw(liveCell.rate, currency)} (live index: ${displayIndex}%)` 
+                    : showLive 
+                      ? `No live rate available to calculate index — click to search ${cell.ota} manually` 
+                      : `Sample data index: ${cell.index}%`;
 
                   // Fallback: generate a direct search link to the hotel on that specific OTA
                   const fallbackLink = getOtaSearchLink(row.name, cell.ota, checkIn, checkOut);
@@ -104,7 +112,7 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                       style={{ background: bg, color: text }}
                       title={tooltip}
                     >
-                      {displayIndex}
+                      {showLive && !hasLiveIndex ? "—" : (displayIndex !== null ? displayIndex : cell.index)}
                       <ExternalLink size={8} className={hasLiveIndex ? "opacity-100" : "opacity-30"} />
                     </span>
                   );

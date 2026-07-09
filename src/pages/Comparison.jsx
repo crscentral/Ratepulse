@@ -106,7 +106,7 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
 
       {showLive && (
         <p className="text-xs text-gray-400 mb-3">
-          Live rates show each hotel's current overall rate (not broken down by room type) — cells without a live match still show sample data.
+          Live rates show each hotel's current overall rate (not broken down by room type) — cells without a live match are marked with — (click to check manually).
         </p>
       )}
 
@@ -162,11 +162,11 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
                         title={`No live rate returned by Google for ${ota} on these dates. Click to search manually.`}
                       >
                         <span className={hotel.isYours ? "font-semibold text-navy/70" : "text-gray-600"}>
-                          {formatCurrency(sampleRate, currency)}
+                          {showLive ? "—" : formatCurrency(sampleRate, currency)}
                         </span>
                         <ExternalLink size={8} className="text-gray-400" />
                       </a>
-                      {!hotel.isYours && (
+                      {!showLive && !hotel.isYours && (
                         <span className={`ml-1 text-xs ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-500" : "text-gray-400"}`}>
                           {diff > 0 ? "▲" : diff < 0 ? "▼" : "–"}
                         </span>
