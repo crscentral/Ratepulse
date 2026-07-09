@@ -4,7 +4,7 @@ import { Card, PageHeader } from "../components/ui";
 import { ROOM_TYPES, OTAS, seedComparisonTable } from "../lib/seedData";
 import { useCurrency } from "../components/CurrencyContext";
 import { formatCurrency, formatRaw } from "../lib/currency";
-import { useMultiChannelRates } from "../lib/liveRates";
+import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
 import { useDateRange } from "../components/DateRangeContext";
@@ -23,14 +23,7 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
     [propertyId, property, competitors]
   );
 
-  const hotelNames = useMemo(() => hotels.map((h) => h.name), [hotels]);
-  const { live, hotelsData, loading: refreshing, refresh, isStale } = useMultiChannelRates({
-    hotelNames,
-    city: property?.location,
-    checkIn,
-    checkOut,
-    currency,
-  });
+  const { live, hotelsData, loading: refreshing, refresh, isStale } = useSharedRates();
 
   // Only trust live cells when the data was actually fetched with the
   // dates/currency currently on screen — otherwise treat as not-live so we

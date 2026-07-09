@@ -4,7 +4,7 @@ import { Card, PageHeader } from "../components/ui";
 import { seedHeatmapGrid, OTAS } from "../lib/seedData";
 import { useCurrency } from "../components/CurrencyContext";
 import { formatRaw } from "../lib/currency";
-import { useMultiChannelRates } from "../lib/liveRates";
+import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
 import { useDateRange, formatDateRange } from "../components/DateRangeContext";
@@ -26,14 +26,7 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
     [propertyId, property, competitors]
   );
 
-  const hotelNames = useMemo(() => grid.map((h) => h.name), [grid]);
-  const { live, hotelsData, loading: refreshing, refresh, isStale } = useMultiChannelRates({
-    hotelNames,
-    city: property?.location,
-    checkIn,
-    checkOut,
-    currency,
-  });
+  const { live, hotelsData, loading: refreshing, refresh, isStale } = useSharedRates();
 
   const showLive = live && !isStale;
   const yourLiveWebsiteRate = showLive ? hotelsData[grid[0]?.name]?.channels?.["WEBSITE"]?.rate : null;

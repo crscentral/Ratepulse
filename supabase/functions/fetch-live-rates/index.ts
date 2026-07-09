@@ -38,7 +38,16 @@ serve(async (req) => {
 
   try {
     const { hotelName, city, checkIn, checkOut, currency } = await req.json();
-    const query = `${hotelName} ${city}`;
+    
+    // Clean up city to extract only the city name from a full address
+    const cleanCityName = (() => {
+      if (!city) return "";
+      const parts = city.split(",").map((p) => p.trim());
+      if (parts.length >= 3) return parts[1];
+      return parts[0];
+    })();
+
+    const query = `${hotelName} ${cleanCityName}`;
 
     const inDate = checkIn || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 1); return d; })());
     const outDate = checkOut || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 2); return d; })());
@@ -55,11 +64,20 @@ serve(async (req) => {
     }
     const data = await res.json();
 
-    const rates = (data.properties || []).slice(0, 1).map((p) => ({
-      name: p.name,
-      rate: p.rate_per_night?.extracted_lowest ?? null,
-      source: "google_hotels",
-    }));
+    let rates = [];
+    if (data.properties && data.properties.length > 0) {
+      rates = data.properties.slice(0, 1).map((p) => ({
+        name: p.name,
+        rate: p.rate_per_night?.extracted_lowest ?? null,
+        source: "google_hotels",
+      }));
+    } else if (data.name) {
+      rates = [{
+        name: data.name,
+        rate: data.rate_per_night?.extracted_lowest ?? null,
+        source: "google_hotels",
+      }];
+    }
 
     return new Response(JSON.stringify({ unavailable: false, rates, currency: curr }), {
       status: 200,

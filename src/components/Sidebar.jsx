@@ -1,9 +1,8 @@
 import React from "react";
 import {
   LayoutDashboard, TrendingUp, ShieldCheck, Grid3x3, Lightbulb, Bell,
-  Building2, Download, LogOut, ShieldAlert, Settings, ChevronsLeft, ChevronsRight, X
+  Building2, Download, LogOut, ShieldAlert, Settings, ChevronsLeft, ChevronsRight, X, Globe
 } from "lucide-react";
-import logo from "../assets/logo.png";
 
 const NAV_ITEMS = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -40,7 +39,7 @@ export default function Sidebar({ active, setActive, onLogout, isAdmin, collapse
         } ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
       >
         <div className={`px-5 py-6 flex items-center gap-2 border-b border-white/10 ${collapsed ? "md:justify-center md:px-0" : ""}`}>
-          <img src={logo} alt="CRS RatePulse" className="w-8 h-8 rounded-md object-contain bg-white shrink-0" />
+          <Globe size={24} className="text-white shrink-0" />
           <span className={`text-lg font-semibold font-heading ${collapsed ? "md:hidden" : ""}`}>CRSRatePulse</span>
           <button onClick={() => setMobileOpen(false)} className="ml-auto md:hidden text-white/60 hover:text-white">
             <X size={20} />

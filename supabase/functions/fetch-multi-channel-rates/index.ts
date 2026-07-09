@@ -56,7 +56,15 @@ function matchChannel(source) {
 }
 
 async function fetchHotelChannels(hotelName, city, serpApiKey, checkIn, checkOut, currency) {
-  const query = `${hotelName} ${city}`;
+  // Clean up city to extract only the city name from a full address
+  const cleanCityName = (() => {
+    if (!city) return "";
+    const parts = city.split(",").map((p) => p.trim());
+    if (parts.length >= 3) return parts[1];
+    return parts[0];
+  })();
+
+  const query = `${hotelName} ${cleanCityName}`;
   const inDate = checkIn || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 1); return d; })());
   const outDate = checkOut || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 2); return d; })());
   const curr = currency || "USD";
@@ -68,29 +76,53 @@ async function fetchHotelChannels(hotelName, city, serpApiKey, checkIn, checkOut
     if (!searchRes.ok) return { name: hotelName, unavailable: true, channels: {} };
     const searchData = await searchRes.json();
 
-    const top = (searchData.properties || [])[0];
-    if (!top?.property_token) return { name: hotelName, unavailable: true, channels: {} };
+    let referenceRate = null;
+    let propertyPageLink = null;
+    let pricesList = [];
 
-    const referenceRate = top.rate_per_night?.extracted_lowest ?? null;
-    const propertyPageLink = searchData.search_metadata?.google_hotels_url || null;
+    if (searchData.properties && searchData.properties.length > 0) {
+      const top = searchData.properties[0];
+      if (!top?.property_token) return { name: hotelName, unavailable: true, channels: {} };
 
-    const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${top.property_token}&api_key=${serpApiKey}`;
-    const detailRes = await fetch(detailUrl);
-    if (!detailRes.ok) return { name: hotelName, unavailable: true, channels: {}, referenceRate };
-    const detailData = await detailRes.json();
+      referenceRate = top.rate_per_night?.extracted_lowest ?? null;
+      propertyPageLink = searchData.search_metadata?.google_hotels_url || null;
 
-    const prices = detailData.prices || [];
+      const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${top.property_token}&api_key=${serpApiKey}`;
+      const detailRes = await fetch(detailUrl);
+      if (!detailRes.ok) {
+        // Fallback: return website only
+        const channels = {
+          "WEBSITE": { rate: referenceRate, link: propertyPageLink }
+        };
+        return { name: hotelName, unavailable: false, referenceRate, channels };
+      }
+      const detailData = await detailRes.json();
+      pricesList = [
+        ...(detailData.featured_prices || []),
+        ...(detailData.prices || [])
+      ];
+    } else if (searchData.name) {
+      // Direct detail page
+      referenceRate = searchData.rate_per_night?.extracted_lowest ?? null;
+      propertyPageLink = searchData.search_metadata?.google_hotels_url || null;
+      pricesList = [
+        ...(searchData.featured_prices || []),
+        ...(searchData.prices || [])
+      ];
+    } else {
+      return { name: hotelName, unavailable: true, channels: {} };
+    }
+
     const channels = {};
-    for (const p of prices) {
+    for (const p of pricesList) {
       const channel = matchChannel(p.source);
       const rate = p.rate_per_night?.extracted_lowest;
       if (!channel || !rate) continue;
-      channels[channel] = { rate, link: p.link || null };
+      if (!channels[channel] || rate < channels[channel].rate) {
+        channels[channel] = { rate, link: p.link || null };
+      }
     }
-    // WEBSITE column: no reliable "official direct" link exists in this data,
-    // so we use the reference rate with a link to the property's Google
-    // Hotels page (the actual source of that reference number) rather than
-    // inventing a fake direct-booking URL.
+    // WEBSITE column
     channels["WEBSITE"] = { rate: referenceRate, link: propertyPageLink };
 
     return { name: hotelName, unavailable: false, referenceRate, channels };

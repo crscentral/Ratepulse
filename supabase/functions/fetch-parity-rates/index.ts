@@ -67,7 +67,16 @@ serve(async (req) => {
 
   try {
     const { hotelName, city, checkIn, checkOut, currency } = await req.json();
-    const query = `${hotelName} ${city}`;
+
+    // Clean up city to extract only the city name from a full address
+    const cleanCityName = (() => {
+      if (!city) return "";
+      const parts = city.split(",").map((p) => p.trim());
+      if (parts.length >= 3) return parts[1];
+      return parts[0];
+    })();
+
+    const query = `${hotelName} ${cleanCityName}`;
 
     const inDate = checkIn || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 1); return d; })());
     const outDate = checkOut || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 2); return d; })());
@@ -79,29 +88,56 @@ serve(async (req) => {
     if (!searchRes.ok) return json({ unavailable: true, reason: "Search request failed" });
     const searchData = await searchRes.json();
 
-    const topProperty = (searchData.properties || [])[0];
-    if (!topProperty?.property_token) return json({ unavailable: true, reason: "Property not found" });
+    let referenceRate = null;
+    let pricesList = [];
+    let hotelNameResult = hotelName;
 
-    const referenceRate = topProperty.rate_per_night?.extracted_lowest;
+    if (searchData.properties && searchData.properties.length > 0) {
+      const topProperty = searchData.properties[0];
+      if (!topProperty?.property_token) return json({ unavailable: true, reason: "Property not found" });
+
+      referenceRate = topProperty.rate_per_night?.extracted_lowest;
+      hotelNameResult = topProperty.name;
+
+      const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${topProperty.property_token}&api_key=${serpApiKey}`;
+      const detailRes = await fetch(detailUrl);
+      if (!detailRes.ok) return json({ unavailable: true, reason: "Detail request failed" });
+      const detailData = await detailRes.json();
+      pricesList = [
+        ...(detailData.featured_prices || []),
+        ...(detailData.prices || [])
+      ];
+    } else if (searchData.name) {
+      referenceRate = searchData.rate_per_night?.extracted_lowest;
+      hotelNameResult = searchData.name;
+      pricesList = [
+        ...(searchData.featured_prices || []),
+        ...(searchData.prices || [])
+      ];
+    } else {
+      return json({ unavailable: true, reason: "Property not found" });
+    }
+
     if (!referenceRate) return json({ unavailable: true, reason: "No reference rate available" });
 
-    const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${topProperty.property_token}&api_key=${serpApiKey}`;
-    const detailRes = await fetch(detailUrl);
-    if (!detailRes.ok) return json({ unavailable: true, reason: "Detail request failed" });
-    const detailData = await detailRes.json();
-
-    const prices = detailData.prices || [];
     const channels = [];
-    for (const p of prices) {
+    const channelMap = {};
+    for (const p of pricesList) {
       const channel = matchChannel(p.source);
       const rate = p.rate_per_night?.extracted_lowest;
       if (!channel || !rate) continue;
-      const diffPct = Math.round(((rate - referenceRate) / referenceRate) * 1000) / 10;
-      const severity = diffPct <= -5 ? "high" : diffPct <= -1 ? "medium" : "ok";
-      channels.push({ channel, rate, diffPct, severity, sourceLabel: p.source });
+      if (!channelMap[channel] || rate < channelMap[channel].rate) {
+        channelMap[channel] = { rate, sourceLabel: p.source };
+      }
     }
 
-    return json({ unavailable: false, referenceRate, hotelName: topProperty.name, channels, currency: curr });
+    for (const [channel, info] of Object.entries(channelMap)) {
+      const diffPct = Math.round(((info.rate - referenceRate) / referenceRate) * 1000) / 10;
+      const severity = diffPct <= -5 ? "high" : diffPct <= -1 ? "medium" : "ok";
+      channels.push({ channel, rate: info.rate, diffPct, severity, sourceLabel: info.sourceLabel });
+    }
+
+    return json({ unavailable: false, referenceRate, hotelName: hotelNameResult, channels, currency: curr });
   } catch (e) {
     return json({ unavailable: true, reason: String(e) });
   }
