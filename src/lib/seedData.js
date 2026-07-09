@@ -114,7 +114,7 @@ export function seedHeatmapGrid(propertyId, propertyName, competitors = []) {
     cells: OTAS.map((ota) => {
       const avgRate = ROOM_TYPES.reduce((sum, _, ri) => sum + rates[hi][ri][ota], 0) / ROOM_TYPES.length;
       const index = Math.round((avgRate / yourWebsiteAvg) * 100);
-      return { ota, index };
+      return { ota, index, rate: Math.round(avgRate) };
     }),
   }));
 }

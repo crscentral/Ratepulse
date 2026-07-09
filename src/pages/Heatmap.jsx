@@ -3,7 +3,7 @@ import { Star, RefreshCw, ExternalLink, Calendar, AlertCircle } from "lucide-rea
 import { Card, PageHeader } from "../components/ui";
 import { seedHeatmapGrid, OTAS } from "../lib/seedData";
 import { useCurrency } from "../components/CurrencyContext";
-import { formatRaw, convertCross } from "../lib/currency";
+import { formatRaw, convertCross, convert } from "../lib/currency";
 import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
@@ -26,11 +26,20 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
   const showLive = live && !isStale;
   const yourLiveWebsiteRate = showLive ? hotelsData[grid[0]?.name]?.channels?.["WEBSITE"]?.rate : null;
 
+  // Resolve your hotel's website rate in the active UI currency
+  const dhavaraWebsiteRateUI = (() => {
+    if (showLive && yourLiveWebsiteRate) {
+      return convertCross(yourLiveWebsiteRate, fetchedCurrency, currency);
+    }
+    const dhavaraWebsiteCell = grid[0]?.cells?.find((c) => c.ota === "WEBSITE");
+    return dhavaraWebsiteCell ? convert(dhavaraWebsiteCell.rate, currency) : 0;
+  })();
+
   if (loading) return null;
 
   return (
     <div>
-      <PageHeader title="Heatmap" subtitle="Rate index by hotel and channel — 100 = parity with your website rate" propertyId={propertyId} setPropertyId={setPropertyId} />
+      <PageHeader title="Heatmap" subtitle="Live rates by hotel and channel — compared directly with your website rate" propertyId={propertyId} setPropertyId={setPropertyId} />
 
       <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-3">
         <Calendar size={13} className="text-gray-400" />
@@ -47,7 +56,7 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <div className="flex gap-3 sm:gap-4 text-xs text-gray-500 flex-wrap">
           <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#DCFCE7" }} /> Cheaper than you (▼)</div>
-          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEF3C7" }} /> Parity (100)</div>
+          <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEF3C7" }} /> Same as you</div>
           <div className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm" style={{ background: "#FEE2E2" }} /> Pricier than you (▲)</div>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -89,44 +98,52 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                   </td>
                   {row.cells.map((cell) => {
                     const liveCell = showLive ? hotelsData[row.name]?.channels?.[cell.ota] : null;
-                    const hasLiveIndex = !!(liveCell?.rate && yourLiveWebsiteRate && liveCell?.link);
-                    const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : cell.index;
+                    const hasLiveCell = !!(liveCell?.rate && liveCell?.link);
+                    
+                    const rateInUI = hasLiveCell 
+                      ? convertCross(liveCell.rate, fetchedCurrency, currency) 
+                      : convert(cell.rate, currency);
+
+                    const displayIndex = dhavaraWebsiteRateUI ? Math.round((rateInUI / dhavaraWebsiteRateUI) * 100) : 100;
 
                     const { bg, text, arrow, arrowColor } = (() => {
-                      if (displayIndex > 100) {
+                      if (row.isYours && cell.ota === "WEBSITE") {
+                        return { bg: "#FEF3C7", text: "#92400E", arrow: null, arrowColor: "" };
+                      }
+                      if (rateInUI > dhavaraWebsiteRateUI) {
                         return { bg: "#FEE2E2", text: "#B91C1C", arrow: "▲", arrowColor: "text-red-600" };
                       }
-                      if (displayIndex < 100) {
+                      if (rateInUI < dhavaraWebsiteRateUI) {
                         return { bg: "#DCFCE7", text: "#15803D", arrow: "▼", arrowColor: "text-emerald-600" };
                       }
                       return { bg: "#FEF3C7", text: "#92400E", arrow: null, arrowColor: "" };
                     })();
 
-                    const tooltip = hasLiveIndex 
-                      ? `${formatRaw(convertCross(liveCell.rate, fetchedCurrency, currency), currency)} (live index: ${displayIndex}%)` 
-                      : `Sample index: ${cell.index}% (click to check ${cell.ota} manually)`;
+                    const tooltip = hasLiveCell 
+                      ? `${formatRaw(rateInUI, currency)} (vs your website: ${displayIndex}%)` 
+                      : `Sample rate: ${formatRaw(rateInUI, currency)} (click to check ${cell.ota} manually)`;
 
                     // MakeMyTrip affiliate links from Google Hotels often return blank pages due to region blocks.
-                    // Bypass it and use our clean search engine redirect, while keeping the live index!
-                    const useFallbackLink = !hasLiveIndex || cell.ota === "MAKEMYTRIP";
+                    // Bypass it and use our clean search engine redirect, while keeping the live rate!
+                    const useFallbackLink = !hasLiveCell || cell.ota === "MAKEMYTRIP";
                     const link = useFallbackLink
                       ? getOtaSearchLink(row.name, cell.ota, checkIn, checkOut)
                       : liveCell.link;
 
                     const content = (
                       <span
-                        className="inline-flex items-center gap-0.5 px-2 py-1 rounded-md text-xs font-semibold min-w-[56px] justify-center"
+                        className="inline-flex items-center gap-0.5 px-2 py-1 rounded-md text-xs font-semibold min-w-[62px] justify-center whitespace-nowrap"
                         style={{ background: bg, color: text }}
                         title={tooltip}
                       >
-                        {displayIndex}
-                        {showLive && !hasLiveIndex ? "*" : ""}
+                        {formatRaw(rateInUI, currency)}
+                        {showLive && !hasLiveCell ? "*" : ""}
                         {arrow && (
                           <span className={`text-[10px] ml-0.5 font-bold ${arrowColor}`}>
                             {arrow}
                           </span>
                         )}
-                        <ExternalLink size={7} className={`ml-0.5 ${hasLiveIndex && cell.ota !== "MAKEMYTRIP" ? "opacity-100" : "opacity-30"}`} />
+                        <ExternalLink size={7} className={`ml-0.5 ${hasLiveCell && cell.ota !== "MAKEMYTRIP" ? "opacity-100" : "opacity-30"}`} />
                       </span>
                     );
 
