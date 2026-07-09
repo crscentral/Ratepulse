@@ -14,7 +14,7 @@ export const PROPERTIES = [
     location: "Vientiane, Laos",
     address: "25 Manthalath Road, Ban Xieng Ngeun, Chanthabouly District, Vientiane 01000, Laos",
     rooms: 26,
-    currency: "USD",
+    currency: "THB",
   },
 ];
 
