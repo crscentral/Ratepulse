@@ -148,11 +148,24 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
                     );
                   }
 
+                  // Fallback: generate a Google search link to the hotel on that specific OTA
+                  const searchQuery = `${hotel.name} ${ota}`;
+                  const fallbackLink = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+
                   return (
                     <td key={ota} className="px-3 py-3 text-center whitespace-nowrap">
-                      <span className={hotel.isYours ? "font-semibold text-navy" : "text-gray-700"}>
-                        {formatCurrency(sampleRate, currency)}
-                      </span>
+                      <a
+                        href={fallbackLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-gray-500 hover:text-navy hover:underline"
+                        title={`No live rate returned by Google for ${ota} on these dates. Click to search manually.`}
+                      >
+                        <span className={hotel.isYours ? "font-semibold text-navy/70" : "text-gray-600"}>
+                          {formatCurrency(sampleRate, currency)}
+                        </span>
+                        <ExternalLink size={8} className="text-gray-400" />
+                      </a>
                       {!hotel.isYours && (
                         <span className={`ml-1 text-xs ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-500" : "text-gray-400"}`}>
                           {diff > 0 ? "▲" : diff < 0 ? "▼" : "–"}

@@ -92,7 +92,10 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                   const hasLiveIndex = liveCell?.rate && yourLiveWebsiteRate && liveCell?.link;
                   const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : cell.index;
                   const { bg, text } = colorForIndex(displayIndex);
-                  const tooltip = hasLiveIndex ? `${formatRaw(liveCell.rate, currency)} (live)` : "Sample data";
+                  const tooltip = hasLiveIndex ? `${formatRaw(liveCell.rate, currency)} (live)` : `Sample data — click to search ${cell.ota}`;
+
+                  const searchQuery = `${row.name} ${cell.ota}`;
+                  const fallbackLink = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
 
                   const content = (
                     <span
@@ -101,19 +104,15 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                       title={tooltip}
                     >
                       {displayIndex}
-                      {hasLiveIndex && <ExternalLink size={9} />}
+                      <ExternalLink size={8} className={hasLiveIndex ? "opacity-100" : "opacity-30"} />
                     </span>
                   );
 
                   return (
                     <td key={cell.ota} className="px-1.5 py-1.5 text-center">
-                      {hasLiveIndex ? (
-                        <a href={liveCell.link} target="_blank" rel="noopener noreferrer">
-                          {content}
-                        </a>
-                      ) : (
-                        content
-                      )}
+                      <a href={hasLiveIndex ? liveCell.link : fallbackLink} target="_blank" rel="noopener noreferrer">
+                        {content}
+                      </a>
                     </td>
                   );
                 })}
