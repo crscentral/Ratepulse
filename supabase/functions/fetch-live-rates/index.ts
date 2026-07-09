@@ -57,7 +57,7 @@ serve(async (req) => {
     const outDate = checkOut || formatDate((() => { const d = new Date(); d.setDate(d.getDate() + 2); return d; })());
     const curr = currency || "USD";
 
-    const url = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}&check_in_date=${inDate}&check_out_date=${outDate}&adults=2&currency=${curr}&api_key=${serpApiKey}`;
+    const url = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}&check_in_date=${inDate}&check_out_date=${outDate}&adults=2&currency=${curr}&gl=th&hl=en&api_key=${serpApiKey}`;
     const res = await fetch(url);
     if (!res.ok) {
       const errText = await res.text();

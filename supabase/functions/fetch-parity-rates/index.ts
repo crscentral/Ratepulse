@@ -87,7 +87,7 @@ serve(async (req) => {
     const curr = currency || "USD";
     const dateParams = `&check_in_date=${inDate}&check_out_date=${outDate}&adults=2&currency=${curr}`;
 
-    const searchUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&api_key=${serpApiKey}`;
+    const searchUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&gl=th&hl=en&api_key=${serpApiKey}`;
     const searchRes = await fetch(searchUrl);
     if (!searchRes.ok) return json({ unavailable: true, reason: "Search request failed" });
     const searchData = await searchRes.json();
@@ -103,7 +103,7 @@ serve(async (req) => {
       referenceRate = topProperty.rate_per_night?.extracted_lowest;
       hotelNameResult = topProperty.name;
 
-      const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${topProperty.property_token}&api_key=${serpApiKey}`;
+      const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${topProperty.property_token}&gl=th&hl=en&api_key=${serpApiKey}`;
       const detailRes = await fetch(detailUrl);
       if (!detailRes.ok) return json({ unavailable: true, reason: "Detail request failed" });
       const detailData = await detailRes.json();

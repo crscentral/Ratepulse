@@ -75,7 +75,7 @@ async function fetchHotelChannels(hotelName, city, serpApiKey, checkIn, checkOut
   const dateParams = `&check_in_date=${inDate}&check_out_date=${outDate}&adults=2&currency=${curr}`;
 
   try {
-    const searchUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&api_key=${serpApiKey}`;
+    const searchUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&gl=th&hl=en&api_key=${serpApiKey}`;
     const searchRes = await fetch(searchUrl);
     if (!searchRes.ok) return { name: hotelName, unavailable: true, channels: {} };
     const searchData = await searchRes.json();
@@ -91,7 +91,7 @@ async function fetchHotelChannels(hotelName, city, serpApiKey, checkIn, checkOut
       referenceRate = top.rate_per_night?.extracted_lowest ?? null;
       propertyPageLink = searchData.search_metadata?.google_hotels_url || null;
 
-      const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${top.property_token}&api_key=${serpApiKey}`;
+      const detailUrl = `https://serpapi.com/search.json?engine=google_hotels&q=${encodeURIComponent(query)}${dateParams}&property_token=${top.property_token}&gl=th&hl=en&api_key=${serpApiKey}`;
       const detailRes = await fetch(detailUrl);
       if (!detailRes.ok) {
         // Fallback: return website only
