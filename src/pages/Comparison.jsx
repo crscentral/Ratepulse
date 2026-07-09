@@ -106,7 +106,7 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
 
       {showLive && (
         <p className="text-xs text-gray-400 mb-3">
-          Live rates show each hotel's current overall rate (not broken down by room type) — cells without a live match are marked with — (click to check manually).
+          Live rates show each hotel's current overall rate (not broken down by room type) — cells without a live match are marked with * (showing estimates, click to check manually).
         </p>
       )}
 
@@ -122,7 +122,6 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
           </thead>
           <tbody>
             {hotels.map((hotel, hi) => {
-              const isHotelUnavailable = showLive && hotelsData[hotel.name]?.unavailable;
               return (
                 <tr key={hotel.name} className="border-b border-gray-50 hover:bg-gray-50/50">
                   <td className="px-4 py-3 sticky left-0 bg-white z-10 w-56 min-w-[14rem] leading-tight text-gray-700">
@@ -131,64 +130,60 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
                       <span className={`truncate text-sm ${hotel.isYours ? "text-navy font-semibold" : ""}`}>
                         {hotel.name}
                       </span>
-                      {isHotelUnavailable && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded shrink-0 font-normal" title="Google Hotels returned no rates for this property on these dates. It may be sold out or unlisted.">
-                          Unavailable
-                        </span>
-                      )}
                     </div>
                   </td>
-                {OTAS.map((ota) => {
-                  const liveCell = showLive ? hotelsData[hotel.name]?.channels?.[ota] : null;
-                  const sampleRate = rates[hi][roomIndex][ota];
-                  const yourSampleRate = rates[0][roomIndex][ota];
-                  const diff = hi === 0 ? 0 : sampleRate - yourSampleRate;
+                  {OTAS.map((ota) => {
+                    const liveCell = showLive ? hotelsData[hotel.name]?.channels?.[ota] : null;
+                    const sampleRate = rates[hi][roomIndex][ota];
+                    const yourSampleRate = rates[0][roomIndex][ota];
+                    const diff = hi === 0 ? 0 : sampleRate - yourSampleRate;
 
-                  if (liveCell?.rate && liveCell?.link) {
+                    if (liveCell?.rate && liveCell?.link) {
+                      return (
+                        <td key={ota} className="px-3 py-3 text-center whitespace-nowrap">
+                          <a
+                            href={liveCell.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 font-semibold text-navy hover:underline"
+                          >
+                            {formatRaw(liveCell.rate, currency)}
+                            <ExternalLink size={10} />
+                          </a>
+                        </td>
+                      );
+                    }
+
+                    // Fallback: generate a direct search link to the hotel on that specific OTA
+                    const fallbackLink = getOtaSearchLink(hotel.name, ota, checkIn, checkOut);
+
                     return (
                       <td key={ota} className="px-3 py-3 text-center whitespace-nowrap">
                         <a
-                          href={liveCell.link}
+                          href={fallbackLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 font-semibold text-navy hover:underline"
+                          className="inline-flex items-center gap-1 text-gray-500 hover:text-navy hover:underline"
+                          title={`Live rate unavailable. Click to check ${ota} manually.`}
                         >
-                          {formatRaw(liveCell.rate, currency)}
-                          <ExternalLink size={10} />
+                          <span className={hotel.isYours ? "font-semibold text-navy/70" : showLive ? "text-gray-400 italic font-normal" : "text-gray-600"}>
+                            {formatCurrency(sampleRate, currency)}
+                            {showLive && "*"}
+                          </span>
+                          <ExternalLink size={8} className="text-gray-400" />
                         </a>
+                        {!hotel.isYours && (
+                          <span className={`ml-1 text-[10px] ${showLive ? "opacity-50" : ""} ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-500" : "text-gray-400"}`}>
+                            {diff > 0 ? "▲" : diff < 0 ? "▼" : "–"}
+                          </span>
+                        )}
                       </td>
                     );
-                  }
-
-                  // Fallback: generate a direct search link to the hotel on that specific OTA
-                  const fallbackLink = getOtaSearchLink(hotel.name, ota, checkIn, checkOut);
-
-                  return (
-                    <td key={ota} className="px-3 py-3 text-center whitespace-nowrap">
-                      <a
-                        href={fallbackLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-gray-500 hover:text-navy hover:underline"
-                        title={`No live rate returned by Google for ${ota} on these dates. Click to search manually.`}
-                      >
-                        <span className={hotel.isYours ? "font-semibold text-navy/70" : "text-gray-600"}>
-                          {showLive ? "—" : formatCurrency(sampleRate, currency)}
-                        </span>
-                        <ExternalLink size={8} className="text-gray-400" />
-                      </a>
-                      {!showLive && !hotel.isYours && (
-                        <span className={`ml-1 text-xs ${diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-500" : "text-gray-400"}`}>
-                          {diff > 0 ? "▲" : diff < 0 ? "▼" : "–"}
-                        </span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
         </table>
       </Card>
     </div>

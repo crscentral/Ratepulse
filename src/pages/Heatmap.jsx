@@ -77,7 +77,6 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
           </thead>
           <tbody>
             {grid.map((row) => {
-              const isHotelUnavailable = showLive && hotelsData[row.name]?.unavailable;
               return (
                 <tr key={row.name} className="border-b border-gray-50">
                   <td className="px-4 py-3 sticky left-0 bg-white z-10 w-56 min-w-[14rem] leading-tight text-gray-700">
@@ -86,60 +85,50 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                       <span className={`truncate text-sm ${row.isYours ? "text-navy font-semibold" : ""}`}>
                         {row.name}
                       </span>
-                      {isHotelUnavailable && (
-                        <span className="text-[10px] bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded shrink-0 font-normal" title="Google Hotels returned no rates for this property on these dates. It may be sold out or unlisted.">
-                          Unavailable
-                        </span>
-                      )}
                     </div>
                   </td>
-                {row.cells.map((cell) => {
-                  const liveCell = showLive ? hotelsData[row.name]?.channels?.[cell.ota] : null;
-                  const hasLiveIndex = liveCell?.rate && yourLiveWebsiteRate && liveCell?.link;
-                  const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : null;
-                  
-                  const { bg, text } = (() => {
-                    if (showLive && !hasLiveIndex) {
-                      return { bg: "#F3F4F6", text: "#9CA3AF" };
-                    }
-                    const idx = displayIndex !== null ? displayIndex : cell.index;
-                    if (idx < 97) return { bg: "#DCFCE7", text: "#15803D" };
-                    if (idx <= 110) return { bg: "#FEF3C7", text: "#92400E" };
-                    return { bg: "#FEE2E2", text: "#B91C1C" };
-                  })();
+                  {row.cells.map((cell) => {
+                    const liveCell = showLive ? hotelsData[row.name]?.channels?.[cell.ota] : null;
+                    const hasLiveIndex = liveCell?.rate && yourLiveWebsiteRate && liveCell?.link;
+                    const displayIndex = hasLiveIndex ? Math.round((liveCell.rate / yourLiveWebsiteRate) * 100) : cell.index;
 
-                  const tooltip = hasLiveIndex 
-                    ? `${formatRaw(liveCell.rate, currency)} (live index: ${displayIndex}%)` 
-                    : showLive 
-                      ? `No live rate available to calculate index — click to search ${cell.ota} manually` 
-                      : `Sample data index: ${cell.index}%`;
+                    const { bg, text } = (() => {
+                      if (displayIndex < 97) return { bg: "#DCFCE7", text: "#15803D" };
+                      if (displayIndex <= 110) return { bg: "#FEF3C7", text: "#92400E" };
+                      return { bg: "#FEE2E2", text: "#B91C1C" };
+                    })();
 
-                  // Fallback: generate a direct search link to the hotel on that specific OTA
-                  const fallbackLink = getOtaSearchLink(row.name, cell.ota, checkIn, checkOut);
+                    const tooltip = hasLiveIndex 
+                      ? `${formatRaw(liveCell.rate, currency)} (live index: ${displayIndex}%)` 
+                      : `Sample index: ${cell.index}% (click to check ${cell.ota} manually)`;
 
-                  const content = (
-                    <span
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold min-w-[52px] justify-center"
-                      style={{ background: bg, color: text }}
-                      title={tooltip}
-                    >
-                      {showLive && !hasLiveIndex ? "—" : (displayIndex !== null ? displayIndex : cell.index)}
-                      <ExternalLink size={8} className={hasLiveIndex ? "opacity-100" : "opacity-30"} />
-                    </span>
-                  );
+                    // Fallback: generate a direct search link to the hotel on that specific OTA
+                    const fallbackLink = getOtaSearchLink(row.name, cell.ota, checkIn, checkOut);
 
-                  return (
-                    <td key={cell.ota} className="px-1.5 py-1.5 text-center">
-                      <a href={hasLiveIndex ? liveCell.link : fallbackLink} target="_blank" rel="noopener noreferrer">
-                        {content}
-                      </a>
-                    </td>
-                  );
-                })}
-              </tr>
-            );
-          })}
-        </tbody>
+                    const content = (
+                      <span
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold min-w-[52px] justify-center"
+                        style={{ background: bg, color: text }}
+                        title={tooltip}
+                      >
+                        {displayIndex}
+                        {showLive && !hasLiveIndex ? "*" : ""}
+                        <ExternalLink size={8} className={hasLiveIndex ? "opacity-100" : "opacity-30"} />
+                      </span>
+                    );
+
+                    return (
+                      <td key={cell.ota} className="px-1.5 py-1.5 text-center">
+                        <a href={hasLiveIndex ? liveCell.link : fallbackLink} target="_blank" rel="noopener noreferrer">
+                          {content}
+                        </a>
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
         </table>
       </Card>
     </div>
