@@ -134,3 +134,52 @@ export function useLiveRates({ propertyId, hotelName, city, checkIn, checkOut, c
 
   return { ...state, refresh, isStale };
 }
+
+export function getOtaSearchLink(hotelName, ota, checkIn, checkOut) {
+  const query = hotelName;
+  const encodedQuery = encodeURIComponent(query);
+  const checkInDate = checkIn || "";
+  const checkOutDate = checkOut || "";
+
+  switch (ota.toUpperCase()) {
+    case "BOOKING.COM":
+      return `https://www.booking.com/searchresults.html?ss=${encodedQuery}${checkInDate ? `&checkin=${checkInDate}` : ""}${checkOutDate ? `&checkout=${checkOutDate}` : ""}`;
+    case "AGODA":
+      return `https://www.agoda.com/search?query=${encodedQuery}`;
+    case "EXPEDIA":
+      return `https://www.expedia.com/Hotel-Search?destination=${encodedQuery}${checkInDate ? `&startDate=${checkInDate}` : ""}${checkOutDate ? `&endDate=${checkOutDate}` : ""}`;
+    case "TRIP.COM":
+      return `https://www.trip.com/hotels/list?searchWord=${encodedQuery}`;
+    case "TRAVELOKA":
+      return `https://www.traveloka.com/en-en/hotel/search?spec=${encodedQuery}`;
+    case "MAKEMYTRIP":
+      return `https://www.makemytrip.com/hotels/hotel-listing/?searchText=${encodedQuery}`;
+    case "AIRBNB":
+      return `https://www.airbnb.com/s/${encodedQuery}/homes`;
+    case "TRIPADVISOR":
+      return `https://www.tripadvisor.com/Search?q=${encodedQuery}`;
+    case "SKYSCANNER":
+      return `https://www.skyscanner.com/hotels/search?q=${encodedQuery}`;
+    case "PRICELINE":
+      return `https://www.priceline.com/search/hotels/directory?search=${encodedQuery}`;
+    case "TRIVAGO":
+      return `https://www.trivago.com/en-US/s?q=${encodedQuery}`;
+    case "BLUEPILLOW":
+      return `https://www.bluepillow.com/search?q=${encodedQuery}`;
+    case "CLEARTRIP":
+      return `https://www.cleartrip.com/hotels/results?city=${encodedQuery}`;
+    case "KLOOK":
+      return `https://www.klook.com/en-US/search?query=${encodedQuery}`;
+    case "VIO.COM":
+      return `https://www.vio.com/search?q=${encodedQuery}`;
+    case "LASTMINUTE":
+      return `https://www.lastminute.com/hotels/search?q=${encodedQuery}`;
+    case "HRS":
+      return `https://www.hrs.com/en/hotel/search?q=${encodedQuery}`;
+    case "HUTCHGO":
+      return `https://www.hutchgo.com/`;
+    default:
+      return `https://www.google.com/search?q=${encodeURIComponent(hotelName + ' ' + ota)}`;
+  }
+}
+

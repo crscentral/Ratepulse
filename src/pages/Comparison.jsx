@@ -8,6 +8,7 @@ import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
 import { useDateRange } from "../components/DateRangeContext";
+import { getOtaSearchLink } from "../lib/liveRates";
 
 export default function ComparisonPage({ propertyId, setPropertyId }) {
   const { currency } = useCurrency();
@@ -148,9 +149,8 @@ export default function ComparisonPage({ propertyId, setPropertyId }) {
                     );
                   }
 
-                  // Fallback: generate a Google search link to the hotel on that specific OTA
-                  const searchQuery = `${hotel.name} ${ota}`;
-                  const fallbackLink = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+                  // Fallback: generate a direct search link to the hotel on that specific OTA
+                  const fallbackLink = getOtaSearchLink(hotel.name, ota, checkIn, checkOut);
 
                   return (
                     <td key={ota} className="px-3 py-3 text-center whitespace-nowrap">

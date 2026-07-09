@@ -8,6 +8,7 @@ import { useSharedRates } from "../components/RatesContext";
 import { useCompetitors } from "../lib/useCompetitors";
 import { useProperties } from "../components/PropertiesContext";
 import { useDateRange, formatDateRange } from "../components/DateRangeContext";
+import { getOtaSearchLink } from "../lib/liveRates";
 
 function colorForIndex(index) {
   if (index < 97) return { bg: "#DCFCE7", text: "#15803D" };
@@ -94,8 +95,8 @@ export default function HeatmapPage({ propertyId, setPropertyId }) {
                   const { bg, text } = colorForIndex(displayIndex);
                   const tooltip = hasLiveIndex ? `${formatRaw(liveCell.rate, currency)} (live)` : `Sample data — click to search ${cell.ota}`;
 
-                  const searchQuery = `${row.name} ${cell.ota}`;
-                  const fallbackLink = `https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`;
+                  // Fallback: generate a direct search link to the hotel on that specific OTA
+                  const fallbackLink = getOtaSearchLink(row.name, cell.ota, checkIn, checkOut);
 
                   const content = (
                     <span
